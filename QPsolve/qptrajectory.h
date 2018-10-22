@@ -15,6 +15,8 @@ typedef CGAL::Gmpz ET;
 #include <CGAL/MP_Float.h>
 typedef CGAL::MP_Float ET;
 #endif
+//#include <CGAL/MP_Float.h>
+//typedef CGAL::MP_Float ET;
 
 
 
@@ -22,11 +24,6 @@ typedef CGAL::Quadratic_program<int> Program;
 typedef CGAL::Quadratic_program_solution<ET> Solution;
 using namespace Eigen;
 
-
-//typedef Vector3d position_type;
-//typedef Vector4d orientation_type;
-//typedef Vector3d velocity_type;
-//typedef Vector3d acceleration_type;
 
 typedef struct position{
 

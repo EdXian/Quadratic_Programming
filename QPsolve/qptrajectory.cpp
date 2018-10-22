@@ -14,6 +14,11 @@ qptrajectory::~qptrajectory(){
 std::vector<double>
 qptrajectory::qpsovle(profile begin, profile end, double time_interval){
 Program solver(CGAL::EQUAL, false, 0, false, 0);
+//CGAL::Quadratic_program_options options;
+//options.set_pricing_strategy(CGAL::QP_BLAND);     // Bland's rule
+
+
+
 std::vector<double> polynomial;
 polynomial.clear();
 double t =time_interval ;
@@ -32,6 +37,9 @@ D.setZero();
 d.setZero();
 A.setZero();
 B.setZero();
+
+
+
 double d11 = b0*b0*t        , d12 = b0*b1*t*t        , d13 = b0*b2*t*t*t         , d14 = b0*b3*t*t*t*t ;
 double d21 = b0*b1*t*t      , d22 = b1*b1*t*t*t      , d23 = b1*b2*t*t*t*t       , d24 = b1*b3*t*t*t*t*t ;
 double d31 = b0*b2*t*t*t    , d32 = b2*b1*t*t*t*t    , d33 = b2*b2*t*t*t*t*t     , d34 = b2*b3*t*t*t*t*t*t;
@@ -63,7 +71,6 @@ d << (1/1.0)*d11*1.0 , (1/2.0)*d21*1.0 ,(1/3.0)*d31*1.0  ,      (1/4.0)*d41*1.0 
 
      for(int i=0 ; i<8; i++){
          for(int j=0;j<(i+1);j++){
-
              solver.set_d(i, j, D(i,j));
          }
      }
@@ -75,16 +82,16 @@ d << (1/1.0)*d11*1.0 , (1/2.0)*d21*1.0 ,(1/3.0)*d31*1.0  ,      (1/4.0)*d41*1.0 
      for(int i=0;i<8;i++){
             solver.set_b(i,B(i,0));
      }
+    Solution s =CGAL::solve_quadratic_program(solver, ET() );
+    assert (s.is_valid());
 
-    Solution s =CGAL::solve_quadratic_program(solver, ET());
-    assert (s.solves_quadratic_program(solver));
 
     for (Solution::Variable_value_iterator it_ =  s.variable_values_begin();
          it_ != s.variable_values_end();
          ++it_) {
         CGAL::Quotient<ET> data = *it_;
 
-        polynomial.push_back(data.numerator().to_double()/data.denominator().to_double());
+      polynomial.push_back(data.numerator().to_double()/data.denominator().to_double());
     }
 
     return polynomial;
@@ -99,29 +106,25 @@ std::vector<trajectory_profile> qptrajectory::get_profile(std::vector<segments> 
     tprofile.clear();
     Eigen::Vector3d d(0,0,0);
     trajectory_profile data(d ,d,d ,0.01);
-//    if(segx.size() != segy.size()){
-
-//    }
-
-
 
     for(int i=0 ; i < seg.size() ; i++){
-        //trajectory_profile begin ,end;
+
         profile begin ,end;
 
         begin.V<< seg[i].b_c.pos[0] , seg[i].b_c.vel[0] , seg[i].b_c.acc[0] , 0;
         end.V  << seg[i].t_c.pos[0] , seg[i].t_c.vel[0]   , seg[i].t_c.acc[0] , 0;
 
-        polyx  = qpsovle(begin , end , time_interval);
+        polyx  = qpsovle(begin , end , seg[i].time_interval);
 
         begin.V.setZero();
         end.V.setZero();
         begin.V<< seg[i].b_c.pos[1] , seg[i].b_c.vel[1] , seg[i].b_c.acc[1] , 0;
         end.V<< seg[i].t_c.pos[1] , seg[i].t_c.vel[1] , seg[i].t_c.acc[1] , 0;
-        polyy =   qpsovle(begin , end , time_interval);
+        polyy =   qpsovle(begin , end , seg[i].time_interval);
+        t=0;
 
-        for(int j=0;j<(time_interval/dt)+1;j++){
-            t = dt*j;
+        for(int j=0;j<(seg[i].time_interval/dt);j++){
+            t =(double) dt*j;
             data.pos << polynomial(polyx , t) ,polynomial(polyy , t) , 0;
             data.vel << polynomial_d1(polyx,t),polynomial_d1(polyy , t) ,0;
             data.acc << polynomial_d2(polyx,t) , polynomial_d2(polyy,t) , 0;
@@ -153,7 +156,7 @@ double cpow(double t,int times){
 double qptrajectory::polynomial_d1(std::vector<double> data ,double t){
     double sum=0.0;
     for(int i=1;i<data.size();i++){
-        sum+= data[i] * i * cpow( t , i-1);
+        sum+=  (double) data[i] * i * cpow( t , i-1);
     }
     return sum;
 }
