@@ -6,12 +6,19 @@
 #include <qptrajectory.h>
 #include <stdio.h>
 #include <QMouseEvent>
+#include <cvxopt/cvxopt.h>
+#include "termcolor/termcolor.hpp"
+
 
 void MainWindow::update(){
+    link->setVisible(true);
     double dt = 0.02;
     if(loop_count > loop_size){
         loop_count = 0;
     }
+
+
+
 
     link->start->setCoords(px_2 ,py_2);
     link->end->setCoords(lpx ,lpy);
@@ -49,18 +56,14 @@ void MainWindow::update(){
     //estimate  force from the ukf
     fint_x =  (l_spring*(px_2-lpx - u_lx*length) + l_damping*(vx_2-lvx));
     fint_y =  (l_spring*(py_2-lpy - u_ly*length) + l_damping*(vy_2-lvy));
-
    // std::cout <<  fint_x <<" : " <<fint_y <<std::endl;
-
-    lax = lm*(fint_x-0)*5.0;
-    lay = lm*(fint_y - 0)*5.0;
-
+    lax = lm*(fint_x-0)*1.0- (lvx - vx_2)*2.0;
+    lay = lm*(fint_y - 0)*1.0- (lvy - vy_2)*2.0;
     lvx +=lax*dt;      lvy +=lay*dt;
     lpx +=lvx*dt;      lpy +=lvy*dt;
 
-
-    forcex = fint_x;
-    forcey = fint_y;
+    forcex =-1* fint_x;
+    forcey = -1*fint_y;
 
    // lpx = lvx *dt; lpx = lvx *dt;
 
@@ -80,6 +83,8 @@ void MainWindow::update(){
 
 
     QPen pen;
+    pen.setWidth(6);
+
     pen.setColor(Qt::black);
     circle->setPen(pen);
     circle->data()->set(circle_data,true);
@@ -93,12 +98,12 @@ void MainWindow::update(){
     pen.setStyle(Qt::SolidLine);
 
     pen.setColor(Qt::cyan);
-    pen.setWidth(4);
+    pen.setWidth(7);
     pen.setStyle(Qt::DashLine);
+    pen.setWidth(7);
 
     path_curve->setPen(pen);
     path_curve->data()->set(path_data,true);
-    pen.setWidth(4);
     pen.setStyle(Qt::SolidLine);
 
     loop_count++;
@@ -117,8 +122,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     this->setWindowTitle("Quadratic Programming");
-
-
+    start=false;
+    QPen pen;
+    pen.setWidth(6);
     newCurve = new QCPCurve(ui->customplot->xAxis, ui->customplot->yAxis);
     newCurve2 = new QCPCurve(ui->customplot->xAxis, ui->customplot->yAxis);
     newCurve3 = new QCPCurve(ui->customplot->xAxis, ui->customplot->yAxis);
@@ -135,34 +141,36 @@ MainWindow::MainWindow(QWidget *parent) :
     path_data.clear();
     follower_data.clear();
 
-    newCurve->removeFromLegend();
+   // newCurve->removeFromLegend();
     newCurve2->removeFromLegend();
     newCurve3->removeFromLegend();
 
     ui->customplot->legend->setVisible(true);
     time =new QTimer(this);
-    newCurve->setName("Trajectory 1st");
+    newCurve->setName("Desired trajectory ");
     newCurve2->setName("Trajectory 2nd");
     newCurve3->setName("Trajectory 3rd");
     item = new QCPItemLine(ui->customplot);
     item->setVisible(false);
     link = new QCPItemLine(ui->customplot);
-    link->setVisible(true);
+
+    pen.setColor(Qt::gray);
+    link->setPen(pen);
 
     ui->customplot->plotLayout()->insertRow(0);
     QCPTextElement *title = new QCPTextElement(ui->customplot, "Trajectory", QFont("system",15, QFont::Times));
     ui->customplot->plotLayout()->addElement(0, 0, title);
 
     ui->customplot2->plotLayout()->insertRow(0);
-    QCPTextElement *title2 = new QCPTextElement(ui->customplot2, "displacement", QFont("system",15, QFont::Times));
+    QCPTextElement *title2 = new QCPTextElement(ui->customplot2, "displacement profile", QFont("system",15, QFont::Times));
     ui->customplot2->plotLayout()->addElement(0, 0, title2);
 
     ui->customplot3->plotLayout()->insertRow(0);
-    QCPTextElement *title3 = new QCPTextElement(ui->customplot3, "velocity", QFont("system",15, QFont::Times));
+    QCPTextElement *title3 = new QCPTextElement(ui->customplot3, "velocity profile", QFont("system",15, QFont::Times));
     ui->customplot3->plotLayout()->addElement(0, 0, title3);
 
     ui->customplot4->plotLayout()->insertRow(0);
-    QCPTextElement *title4 = new QCPTextElement(ui->customplot4, "acceleration", QFont("system",15, QFont::Times));
+    QCPTextElement *title4 = new QCPTextElement(ui->customplot4, "acceleration profile", QFont("system",15, QFont::Times));
     ui->customplot4->plotLayout()->addElement(0, 0, title4);
 
     ui->customplot->axisRect()->setupFullAxesBox(true);
@@ -170,7 +178,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     l_damping = 1.0;
-    l_spring = 1.0;
+    l_spring = 7.0;
     mass = 1.0;
     damping = 1.0;
     spring  =1.0;
@@ -178,8 +186,8 @@ MainWindow::MainWindow(QWidget *parent) :
     forcey = 0.0;
     lm = 1.0;
 
-    ui->customplot->xAxis->setRange(-7,7);
-    ui->customplot->yAxis->setRange(-7,7);
+    ui->customplot->xAxis->setRange(-6,6);
+    ui->customplot->yAxis->setRange(-6,6);
 
     std::vector<segments> path;
     trajectory_profile p1 , p2 ,p3  ;
@@ -198,11 +206,12 @@ MainWindow::MainWindow(QWidget *parent) :
     lvx = 0.0; lvy = 0.0;
     lax = 0.0; lay = 0.0;
 
-    length = 0.5;
+    length = 0.9;
 
-    px_2 = 1.0; py_2=1.0;
+    px_2 = 1.0; py_2=0.0;
     ax_2 = 0.0; ay_2=1.0;
     vx_2 = 0.0; vy_2=1.0;
+
     p1.pos << 1.0,0,0;
     p1.vel << 0.0,0.0,0;
     p1.acc << 0.0,0.0,0;
@@ -223,6 +232,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
    loop_size= profile.size();
 
+   link->start->setCoords(px_2 ,py_2);
+   link->end->setCoords(lpx ,lpy);
 
    std::cout << profile.size() <<std::endl;
    data.clear();
@@ -237,10 +248,19 @@ MainWindow::MainWindow(QWidget *parent) :
       circle_data[i]=QCPCurveData(i+1, 1+0.2*cos((2*3.14159/100)*i), 0.2*sin((2*3.14159/100)*i) );
    }
 
-    QPen pen;
     pen.setColor(Qt::black);
     circle->setPen(pen);
     circle->data()->set(circle_data);
+
+    follower_data.clear();
+    follower_data.resize(100);
+    for(int i=0;i<100;i++){
+        follower_data[i] = QCPCurveData(i+1 , lpx+0.2*cos((2*3.14159/100)*i) ,lpy+0.2*sin((2*3.14159/100)*i));
+    }
+
+    pen.setColor(Qt::red);
+    follower->setPen(pen);
+    follower->data()->set(follower_data);
 
 
     ui->customplot2->addGraph();
@@ -284,11 +304,25 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->customplot4->graph(1)->addData(i*0.02,profile[i].acc[1]);
     }
 
-
-
+    pen.setColor(Qt::blue);
+    pen.setWidth(5);
+    newCurve->setPen(pen);
+    newCurve2->setPen(pen);
+    newCurve3->setPen(pen);
     ui->customplot2->setInteractions(QCP::iRangeDrag);
     ui->customplot3->setInteractions(QCP::iRangeDrag);
     ui->customplot4->setInteractions(QCP::iRangeDrag);
+
+
+    ui->customplot->xAxis->setLabel("x");
+    ui->customplot2->xAxis->setLabel("time (s)");
+    ui->customplot3->xAxis->setLabel("time (s)");
+    ui->customplot4->xAxis->setLabel("time (s)");
+
+    ui->customplot->yAxis->setLabel("y");
+    ui->customplot2->yAxis->setLabel("position (m)");
+    ui->customplot3->yAxis->setLabel("velocity (m/s)");
+    ui->customplot4->yAxis->setLabel("acceleration (m/s/s)");
 
 
     ui->customplot2->xAxis->setRange(0,profile.size()*0.02);
@@ -306,12 +340,130 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->customplot2->replot();
     ui->customplot3->replot();
     ui->customplot4->replot();
+
     connect(time,SIGNAL(timeout()),this,SLOT(update()));
     connect(ui->customplot, SIGNAL(mousePress(QMouseEvent*)),this,SLOT(mouseClick(QMouseEvent*)));
     connect(ui->customplot, SIGNAL(mouseRelease(QMouseEvent*)),this,SLOT(mouseClick(QMouseEvent*)));
     connect(ui->customplot, SIGNAL(mouseMove(QMouseEvent*)),this,SLOT(mouseClick(QMouseEvent*)));
 
-    time->start(20);
+
+
+    Py_Initialize();
+
+    if (import_cvxopt() < 0) {
+     // fprintf(stderr, "error importing cvxopt");
+
+    }
+    //create solver object
+    PyObject *solvers = PyImport_ImportModule("cvxopt.solvers");
+
+    if (!solvers) {
+       // fprintf(stderr, "error importing cvxopt.solvers");
+    }
+
+    //linear programming
+     PyObject *lp = PyObject_GetAttrString(solvers, "qp");
+       if (!lp) {
+         fprintf(stderr, "error referencing cvxopt.solvers.lp");
+         Py_DECREF(solvers);
+
+       }
+
+    PyObject *G = (PyObject*)Matrix_New(1,3,DOUBLE);
+    PyObject *p = (PyObject*)Matrix_New(3,1,DOUBLE);
+    PyObject *Q = (PyObject*)Matrix_New(3,3,DOUBLE);
+    PyObject *h = (PyObject*)Matrix_New(1,1,DOUBLE);
+
+    PyObject *A = (PyObject*)Matrix_New(2,3,DOUBLE); //ok
+    PyObject *B = (PyObject*)Matrix_New(2,1,DOUBLE);  //ok
+
+
+    PyObject *pArgs = PyTuple_New(6);
+    if(!G || !Q || !pArgs){
+        fprintf(stderr , "error creating matrices");
+        Py_DECREF(solvers); Py_DECREF(lp);
+        Py_XDECREF(G); Py_XDECREF(Q); Py_XDECREF(h); Py_XDECREF(pArgs);
+    }
+
+
+    MAT_BUFD(G)[0] = 0.0;
+    MAT_BUFD(G)[1] = 0.0;
+    MAT_BUFD(G)[2] = 0.0;
+
+    MAT_BUFD(p)[0] = 0.0;
+    MAT_BUFD(p)[1] = 0.0;
+    MAT_BUFD(p)[2] = 0.0;
+
+    MAT_BUFD(Q)[0] =  1.0;
+    MAT_BUFD(Q)[1] =  1.3;
+    MAT_BUFD(Q)[2] =  0.0;
+    MAT_BUFD(Q)[3] =  1.3;
+    MAT_BUFD(Q)[4] =  2.0;
+    MAT_BUFD(Q)[5] =  0.0;
+    MAT_BUFD(Q)[6] =  0.0;
+    MAT_BUFD(Q)[7] =  0.0;
+    MAT_BUFD(Q)[8] =  2.0;
+
+//    PyObject *x = PyDict_GetItemString(sol, "x");
+//    std::cout<<   std::endl<<MAT_BUFD(x)[0]
+//                <<std::endl<<MAT_BUFD(x)[1]
+//                <<std::endl<<MAT_BUFD(x)[2]<<std::endl;
+
+
+    MAT_BUFD(h)[0] = 0.0;
+    MAT_BUFD(h)[1] = 0.0;
+
+    MAT_BUFD(A)[0] =  1.3;
+    MAT_BUFD(A)[1] =  1.5;
+    MAT_BUFD(A)[2] =  1.2;
+    MAT_BUFD(A)[3] =  2.6;
+    MAT_BUFD(A)[4] =  0.4;
+    MAT_BUFD(A)[5] =  -1.2;
+
+    MAT_BUFD(B)[0] = 1.6;
+    MAT_BUFD(B)[1] = 4.3;
+
+
+    PyTuple_SetItem(pArgs, 0, Q);
+    PyTuple_SetItem(pArgs, 1, p);
+    PyTuple_SetItem(pArgs, 2, G);
+    PyTuple_SetItem(pArgs, 3, h);
+    PyTuple_SetItem(pArgs, 4, A);
+    PyTuple_SetItem(pArgs, 5, B);
+
+//    std::cout <<  termcolor::on_red << termcolor::grey<< "\t    \uf113 "
+//              <<  termcolor::on_magenta << termcolor::dark<< "\t    \uf113 "
+//              <<  termcolor::on_green <<  termcolor::dark<< "\t    \uf113 "
+//              <<  termcolor::on_blue << termcolor::dark<< "\t    \uf113 "
+//              <<  termcolor::reset<<  std::endl;
+
+
+
+    PyObject *sol = PyObject_CallObject(lp, pArgs);
+    if (!sol) {
+      PyErr_Print();
+      Py_DECREF(solvers); Py_DECREF(lp);
+      Py_DECREF(pArgs);
+    }
+
+        PyObject *x = PyDict_GetItemString(sol, "x");
+        std::cout<<   std::endl<<MAT_BUFD(x)[0]
+                    <<std::endl<<MAT_BUFD(x)[1]
+                    <<std::endl<<MAT_BUFD(x)[2]<<std::endl;
+
+
+
+        Py_DECREF(solvers);
+        Py_DECREF(lp);
+        Py_DECREF(pArgs);
+        Py_DECREF(sol);
+
+        Py_Finalize();
+
+
+
+
+    //time->start(20);
 
 }
 
@@ -343,4 +495,15 @@ void MainWindow::mouseClick(QMouseEvent *event){
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::on_start_button_clicked()
+{
+    if(start){
+        time->stop();
+        start = false;
+    }else{
+        time->start(20);
+        start = true;
+    }
 }

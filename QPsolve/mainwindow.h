@@ -98,6 +98,7 @@ public:
     double lvy;
     double lax;
     double lay;
+    bool start;
 private:
     Ui::MainWindow *ui;
 
@@ -106,6 +107,7 @@ private slots:
 
     void update();
 
+    void on_start_button_clicked();
 };
 
 #endif // MAINWINDOW_H
