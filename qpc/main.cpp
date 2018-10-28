@@ -2,7 +2,7 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>
-#include "termcolor/termcolor.hpp"
+
 #include <qptrajectory.h>
 
 double t=1.6;

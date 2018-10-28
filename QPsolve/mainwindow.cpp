@@ -5,7 +5,7 @@
 //#include <qptrajectory.h>
 #include <stdio.h>
 #include <QMouseEvent>
-#include "termcolor/termcolor.hpp"
+
 
 
 void MainWindow::update(){
@@ -432,12 +432,6 @@ MainWindow::MainWindow(QWidget *parent) :
 //    PyTuple_SetItem(pArgs, 3, h);
 //    PyTuple_SetItem(pArgs, 4, A);
 //    PyTuple_SetItem(pArgs, 5, B);
-
-////    std::cout <<  termcolor::on_red << termcolor::grey<< "\t    \uf113 "
-////              <<  termcolor::on_magenta << termcolor::dark<< "\t    \uf113 "
-////              <<  termcolor::on_green <<  termcolor::dark<< "\t    \uf113 "
-////              <<  termcolor::on_blue << termcolor::dark<< "\t    \uf113 "
-////              <<  termcolor::reset<<  std::endl;
 
 
 
