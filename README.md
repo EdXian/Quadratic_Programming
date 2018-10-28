@@ -37,7 +37,18 @@ qmake ..
 make
 ./QPSolve
 ```
+3. rospackage
+```
+clone folder "qptrajectory_ros" to ~/catkin_ws/src
 
+cd ~catkin_ws
 
+catkin_make
+
+rosrun qptrajectory qptest
+
+rqt_plot
+
+```
 
 
