@@ -19,7 +19,7 @@ include_directories(
 add_library(qptrajectory SHARED include/qptrajectory.cpp include/qptrajectory.h)
 target_link_libraries(
     qptrajectory  ${PYTHON_LIBRARIES}
-  -lgmp -lmpfr -lCGAL
+  #-lgmp -lmpfr -lCGAL
 )
 
 #qt5_use_modules(qtsampleplayer Core Widgets Multimedia MultimediaWidgets Gui OpenGL)

@@ -1,4 +1,5 @@
-#include <qptrajectory.h>
+#include "qptrajectory.h"
+#include <cvxopt/cvxopt.h>
 qptrajectory::qptrajectory(){
 
 
@@ -13,9 +14,6 @@ qptrajectory::~qptrajectory(){
 
 std::vector<double>
 qptrajectory::qpsovle(profile begin, profile end, double time_interval){
-Program solver(CGAL::EQUAL, false, 0, false, 0);
-//CGAL::Quadratic_program_options options;
-//options.set_pricing_strategy(CGAL::QP_BLAND);     // Bland's rule
 
 
 
@@ -45,6 +43,44 @@ double d21 = b0*b1*t*t      , d22 = b1*b1*t*t*t      , d23 = b1*b2*t*t*t*t      
 double d31 = b0*b2*t*t*t    , d32 = b2*b1*t*t*t*t    , d33 = b2*b2*t*t*t*t*t     , d34 = b2*b3*t*t*t*t*t*t;
 double d41 = b3*b0*t*t*t*t  , d42 = b3*b1*t*t*t*t*t  , d43 = b3*b2*t*t*t*t*t*t   , d44 = b3*b3*t*t*t*t*t*t*t ;
 
+Py_Initialize();
+if (import_cvxopt() < 0) {
+ // fprintf(stderr, "error importing cvxopt");
+
+}
+//create solver object
+PyObject *solvers = PyImport_ImportModule("cvxopt.solvers");
+
+if (!solvers) {
+   // fprintf(stderr, "error importing cvxopt.solvers");
+}
+PyObject *lp = PyObject_GetAttrString(solvers, "qp");
+
+
+
+  if (!lp) {
+    fprintf(stderr, "error referencing cvxopt.solvers.lp");
+    Py_DECREF(solvers);
+
+  }
+
+
+  PyObject *G = (PyObject*)Matrix_New(1,8,DOUBLE);
+  PyObject *p = (PyObject*)Matrix_New(8,1,DOUBLE);
+  PyObject *Q = (PyObject*)Matrix_New(8,8,DOUBLE);
+  PyObject *h = (PyObject*)Matrix_New(1,1,DOUBLE);
+
+  PyObject *A_ = (PyObject*)Matrix_New(8,8,DOUBLE); //ok
+  PyObject *B_ = (PyObject*)Matrix_New(8,1,DOUBLE);  //ok
+
+
+  PyObject *pArgs = PyTuple_New(6);
+  if(!G || !Q || !pArgs){
+      fprintf(stderr , "error creating matrices");
+      Py_DECREF(solvers); Py_DECREF(lp);
+      Py_XDECREF(G); Py_XDECREF(Q); Py_XDECREF(h); Py_XDECREF(pArgs);
+  }
+
 
 d << (1/1.0)*d11*1.0 , (1/2.0)*d21*1.0 ,(1/3.0)*d31*1.0  ,      (1/4.0)*d41*1.0     ,
      (1/2.0)*d21*1.0 , (1/3.0)*d22*1.0 ,(1/4.0)*d32*1.0  ,      (1/5.0)*d42*1.0     ,
@@ -71,28 +107,51 @@ d << (1/1.0)*d11*1.0 , (1/2.0)*d21*1.0 ,(1/3.0)*d31*1.0  ,      (1/4.0)*d41*1.0 
 
      for(int i=0 ; i<8; i++){
          for(int j=0;j<(i+1);j++){
-             solver.set_d(i, j, D(i,j));
+             MAT_BUFD(Q)[i*8+j] = D(j,i)   ;
+             //solver.set_d(i, j, D(i,j));
+
          }
      }
      for(int i=0;i<8;i++){
          for(int j=0;j<8;j++){
-             solver.set_a(j, i,  A(i,j));
+             MAT_BUFD(A_)[i*8+j] = A(j,i)   ;
          }
      }
      for(int i=0;i<8;i++){
-            solver.set_b(i,B(i,0));
+            //solver.set_b(i,B(i,0));
+           MAT_BUFD(B_)[i] = B(i,0)   ;
+
      }
-    Solution s =CGAL::solve_quadratic_program(solver, ET() );
-    assert (s.is_valid());
 
 
-    for (Solution::Variable_value_iterator it_ =  s.variable_values_begin();
-         it_ != s.variable_values_end();
-         ++it_) {
-        CGAL::Quotient<ET> data = *it_;
+     PyTuple_SetItem(pArgs, 0, Q);
+     PyTuple_SetItem(pArgs, 1, p);
+     PyTuple_SetItem(pArgs, 2, G);
+     PyTuple_SetItem(pArgs, 3, h);
+     PyTuple_SetItem(pArgs, 4, A_);
+     PyTuple_SetItem(pArgs, 5, B_);
 
-      polynomial.push_back(data.numerator().to_double()/data.denominator().to_double());
-    }
+
+     PyObject *sol = PyObject_CallObject(lp, pArgs);
+
+     if (!sol) {
+       PyErr_Print();
+       Py_DECREF(solvers); Py_DECREF(lp);
+       Py_DECREF(pArgs);
+     }
+
+       PyObject *x = PyDict_GetItemString(sol, "x");
+
+       for(int i=0;i<8;i++){
+          polynomial.push_back(MAT_BUFD(x)[i]);
+
+       }
+
+         Py_DECREF(solvers);
+         Py_DECREF(lp);
+         Py_DECREF(pArgs);
+         Py_DECREF(sol);
+         Py_Finalize();
 
     return polynomial;
 }
@@ -174,3 +233,4 @@ double qptrajectory::polynomial_d3(std::vector<double> data ,double t){
     }
     return sum;
 }
+

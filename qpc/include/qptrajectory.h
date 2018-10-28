@@ -8,24 +8,12 @@
 
 //#include <cvxopt/cvxopt.h>
 
-// deprecated
-#include <CGAL/basic.h>
-#include <CGAL/QP_models.h>
-#include <CGAL/QP_functions.h>
-#ifdef CGAL_USE_GMP
-#include <CGAL/Gmpz.h>
-typedef CGAL::Gmpz ET;
-#else
-#include <CGAL/MP_Float.h>
-typedef CGAL::MP_Float ET;
-#endif
-//#include <CGAL/MP_Float.h>
-//typedef CGAL::MP_Float ET;
 
 
 
-typedef CGAL::Quadratic_program<int> Program;
-typedef CGAL::Quadratic_program_solution<ET> Solution;
+
+//typedef CGAL::Quadratic_program<int> Program;
+//typedef CGAL::Quadratic_program_solution<ET> Solution;
 using namespace Eigen;
 
 
@@ -133,7 +121,7 @@ public:
     double polynomial_d2(std::vector<double> data ,double t);
     double polynomial_d3(std::vector<double> data ,double t);
 
-    Program *qp;
+    //Program *qp;
 
 private:
 

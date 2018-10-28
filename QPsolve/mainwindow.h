@@ -2,22 +2,12 @@
 #define MAINWINDOW_H
 #include <iostream>
 #include <fstream>
-#include <CGAL/basic.h>
-#include <CGAL/QP_models.h>
-#include <CGAL/QP_functions.h>
-#include <qcustomplot.h>
-#include "qptrajectory.h"
 
-//#ifdef CGAL_USE_GMP
-//#include <CGAL/Gmpz.h>
-//typedef CGAL::Gmpz ET;
-//#else
-//#include <CGAL/MP_Float.h>
-//typedef CGAL::MP_Float ET;
-//#endif
-//#include <CGAL/MP_Float.h>
-//typedef CGAL::MP_Float ET;
+#include <qcustomplot.h>
 #include <QMainWindow>
+
+#include <qptrajectory.h>
+
 
 namespace Ui {
 class MainWindow;

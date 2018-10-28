@@ -4,24 +4,7 @@
 #include <vector>
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Dense>
-#include <CGAL/basic.h>
-#include <CGAL/QP_models.h>
-#include <CGAL/QP_functions.h>
-
-#ifdef CGAL_USE_GMP
-#include <CGAL/Gmpz.h>
-typedef CGAL::Gmpz ET;
-#else
-#include <CGAL/MP_Float.h>
-typedef CGAL::MP_Float ET;
-#endif
-//#include <CGAL/MP_Float.h>
-//typedef CGAL::MP_Float ET;
-
-
-
-typedef CGAL::Quadratic_program<int> Program;
-typedef CGAL::Quadratic_program_solution<ET> Solution;
+#include <Python.h>
 using namespace Eigen;
 
 
@@ -111,40 +94,7 @@ public:
 
 };
 
-
-
-
-//struct trajectory_profile{
-//    double time;
-//    Eigen::Vector3d  position;
-//    Eigen::Vector3d velocity;
-//    Eigen::Vector3d acceleration;
-//    trajectory_profile(Eigen::Vector3d pos_ ,Eigen::Vector3d vel_ , Eigen::Vector3d acc_ , double t_)
-//    {
-//        position = pos_;
-//        velocity = vel_;
-//        acceleration =acc_;
-//        time = t_;
-//    }
-//};
-
-//struct boundary_condition{
-//   double pos;
-//   double vel;
-//   double acc;
-//   double jerk;
-//};
-
-//struct segments{
-//    double dt;
-//    boundary_condition i_c;
-//    boundary_condition t_c;
-//};
-
-
-
-
-
+typedef  std::vector<segments> path_def;
 
 class qptrajectory{
 
@@ -162,7 +112,7 @@ public:
     double polynomial_d2(std::vector<double> data ,double t);
     double polynomial_d3(std::vector<double> data ,double t);
 
-    Program *qp;
+
 
 private:
 
@@ -172,3 +122,4 @@ private:
 };
 
 #endif // qptrajectory_H
+

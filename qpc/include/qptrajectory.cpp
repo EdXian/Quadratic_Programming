@@ -14,7 +14,7 @@ qptrajectory::~qptrajectory(){
 
 std::vector<double>
 qptrajectory::qpsovle(profile begin, profile end, double time_interval){
-Program solver(CGAL::EQUAL, false, 0, false, 0);
+//Program solver(CGAL::EQUAL, false, 0, false, 0);
 //CGAL::Quadratic_program_options options;
 //options.set_pricing_strategy(CGAL::QP_BLAND);     // Bland's rule
 
