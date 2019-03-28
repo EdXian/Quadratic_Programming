@@ -41,7 +41,7 @@ make
 ```
 clone folder "qptrajectory_ros" to ~/catkin_ws/src
 
-cd ~catkin_ws
+cd ~/catkin_ws
 
 catkin_make
 
@@ -50,5 +50,20 @@ rosrun qptrajectory qptest
 rqt_plot
 
 ```
+
+## Troubleshoot
+
+* `catkin build` (`catkin_make`) compile error
+```
+Errors     << qptrajectory:make ~/catkin_ws/logs/qptrajectory/build.make.005.log             
+//usr/lib/x86_64-linux-gnu/libapr-1.so.0: undefined reference to `uuid_generate@UUID_1.0'
+collect2: error: ld returned 1 exit status
+make[2]: *** [~/catkin_ws/devel/.private/qptrajectory/lib/qptrajectory/qptest] Error 1
+make[1]: *** [CMakeFiles/qptest.dir/all] Error 2
+make: *** [all] Error 2
+```
+- It might suggest that the `libuuid` version is too old, I fixed it by `conda install -c conda-forge libuuid `
+- [ref](https://github.com/uzh-rpg/rpg_esim/issues/7)
+
 
 
